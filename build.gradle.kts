@@ -3,3 +3,6 @@ plugins {
     kotlin("android")
     kotlin("kapt")
 }
+dependencies {
+    api(project(mapOf("path" to ":extension:repository")))
+}
