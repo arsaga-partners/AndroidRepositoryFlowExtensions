@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.*
 
 abstract class StateFlowRepository<Res, Req>(
     private val coroutineScope: CoroutineScope,
-    initRequest: Req? = null
-) : BaseRepository.Impl<UiState<Res>, StateFlow<UiState<Res>>, Req>(initRequest) {
+    override val requestQuery: (() -> Req)? = null
+) : BaseRepository.Impl<UiState<Res>, StateFlow<UiState<Res>>, Req>(requestQuery) {
 
     private val _dataSource = DataSource<Res>(coroutineScope, ::onActive)
 
@@ -20,6 +20,10 @@ abstract class StateFlowRepository<Res, Req>(
         _dataSource.stateFlow.value = response
     }
 
+    override fun refresh() {
+        fetch(requestQuery?.invoke())
+    }
+
     open fun onActive(isActive: Boolean) {
         if (isActive && isNeedUpdate()) refresh()
     }
@@ -27,8 +31,8 @@ abstract class StateFlowRepository<Res, Req>(
 
 abstract class StateFlowPagingRepository<Res, Req, Content>(
     private val coroutineScope: CoroutineScope,
-    initRequest: Req? = null
-) : BasePagingRepository.Impl<UiState<Res>, StateFlow<UiState<Res>>, Req, Content>(initRequest) {
+    override val requestQuery: (() -> Req)? = null
+) : BasePagingRepository.Impl<UiState<Res>, StateFlow<UiState<Res>>, Req, Content>(requestQuery) {
 
     private val _dataSource = DataSource<Res>(coroutineScope, ::onActive)
 
@@ -39,6 +43,16 @@ abstract class StateFlowPagingRepository<Res, Req, Content>(
     override fun dataPush(response: UiState<Res>?) {
         response ?: return
         _dataSource.stateFlow.value = combineList(currentList(), response)
+    }
+
+    override fun refresh() {
+        if (dataSource.value.data == null) {
+            requestQuery?.invoke()
+        } else {
+            latestRequestCache
+        }.run {
+            dispatch(this)
+        }
     }
 
     open fun onActive(isActive: Boolean) {
