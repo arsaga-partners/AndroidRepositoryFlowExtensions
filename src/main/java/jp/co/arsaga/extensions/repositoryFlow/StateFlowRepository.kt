@@ -38,21 +38,15 @@ abstract class StateFlowPagingRepository<Res, Req, Content>(
 
     override val dataSource: StateFlow<UiState<Res>> = _dataSource.stateFlow
 
-    override fun limitEntityCount(): Int = 100
-
     override fun dataPush(response: UiState<Res>?) {
         response ?: return
         _dataSource.stateFlow.value = combineList(currentList(), response)
     }
 
     override fun refresh() {
-        if (dataSource.value.data == null) {
-            requestQuery?.invoke()
-        } else {
-            latestRequestCache
-        }.run {
-            dispatch(this)
-        }
+        requestQuery
+            ?.invoke()
+            ?.run { fetch(this) }
     }
 
     open fun onActive(isActive: Boolean) {
