@@ -4,6 +4,7 @@ import jp.co.arsaga.extensions.repository.common.BasePagingRepository
 import jp.co.arsaga.extensions.repository.common.BaseRepository
 import jp.co.arsaga.extensions.repository.common.UiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 
 abstract class StateFlowRepository<Res, Req>(
@@ -47,6 +48,14 @@ abstract class StateFlowPagingRepository<Res, Req, Content>(
         requestQuery
             ?.invoke()
             ?.run { fetch(this) }
+    }
+
+    override fun clearStatus() {
+        isBusy.set(false)
+        coroutineScope.cancel()
+        _dataSource.stateFlow.update {
+            UiState()
+        }
     }
 
     open fun onActive(isActive: Boolean) {
