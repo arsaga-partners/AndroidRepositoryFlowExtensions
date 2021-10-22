@@ -4,8 +4,9 @@ import jp.co.arsaga.extensions.repository.common.BasePagingRepository
 import jp.co.arsaga.extensions.repository.common.BaseRepository
 import jp.co.arsaga.extensions.repository.common.UiState
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 abstract class StateFlowRepository<Res, Req>(
     private val coroutineScope: CoroutineScope,
@@ -39,6 +40,8 @@ abstract class StateFlowPagingRepository<Res, Req, Content>(
 
     override val dataSource: StateFlow<UiState<Res>> = _dataSource.stateFlow
 
+    private var nextFetchState: Job? = null
+
     override fun dataPush(response: UiState<Res>?) {
         response ?: return
         _dataSource.stateFlow.value = combineList(currentList(), response)
@@ -52,9 +55,15 @@ abstract class StateFlowPagingRepository<Res, Req, Content>(
 
     override fun clearStatus() {
         isBusy.set(false)
-        coroutineScope.cancel()
+        nextFetchState?.cancel()
         _dataSource.stateFlow.update {
             UiState()
+        }
+    }
+
+    override fun fetchNextPage() {
+        nextFetchState = coroutineScope.launch {
+            super.fetchNextPage()
         }
     }
 
