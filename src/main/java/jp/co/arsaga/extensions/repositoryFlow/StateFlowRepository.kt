@@ -33,7 +33,7 @@ abstract class StateFlowRepository<Res, Req>(
 
 abstract class StateFlowPagingRepository<Res, Req, Content>(
     private val coroutineScope: CoroutineScope,
-    override val requestQuery: (() -> Req)? = null
+    override val requestQuery: () -> Req
 ) : BasePagingRepository.Impl<UiState<Res>, StateFlow<UiState<Res>>, Req, Content>(requestQuery) {
 
     private val _dataSource = DataSource<Res>(coroutineScope, ::onActive)
